@@ -1,0 +1,46 @@
+# DRACO config for cartpole_stab. Aligned with FuzRL paper Table 2 hp.
+# Used as default for `python scripts/train.py --task cartpole_stab`.
+# Override individual fields with --<key> CLI flags.
+
+task: cartpole_stab
+total_steps: 1_000_000
+n_envs: 8
+steps_per_epoch: 2048
+
+# Cost / safety  -- MATCHES FuzRL paper Table 2 (cost_limit = 1)
+# Note: this is much stricter than my earlier default (25). FuzRL's reward
+# is exp(-quadratic_cost) so cost_limit=1 means ~1 step violation allowed
+# per 250-step episode. This is the intended difficulty for fair comparison.
+cost_limit: 1.0
+
+# Discounts
+gamma: 0.99
+lam: 0.97
+
+# Optimizer  -- MATCHES FuzRL Table 2 actor/critic/fuzzy lr
+pi_lr: 3.0e-4
+v_lr: 1.0e-3
+vc_lr: 1.0e-3
+gpd_lr: 1.0e-3
+choquet_lr: 3.0e-4
+penalty_lr: 5.0e-2
+
+# PPO  -- target_kl=0.2 MATCHES FuzRL Table 2
+clip_ratio: 0.2
+train_pi_iters: 40        # FuzRL "optimization step"
+train_v_iters: 40
+target_kl: 0.2            # FuzRL value (was 0.015 in my earlier config; too tight)
+hidden_sizes: [64, 64]
+
+# IQN / risk-aware (DRACO-specific, no FuzRL counterpart)
+n_tau_train: 32
+n_tau_eval: 64
+eta: 0.7
+
+# Multi-source shells: K=4 stratified instead of FuzRL's K=10 random.
+# Justification: stratified sigmas give 4 genuinely-different risk sources
+# (versus K=10 with identical sigma, where shells are highly correlated).
+# Choquet capacity is K-dimensional (not 2^K), so K=4 vs K=10 is purely
+# a design choice on shell diversity, not parameter budget.
+n_shells: 4
+shell_sigmas: [0.01, 0.05, 0.10, 0.20]

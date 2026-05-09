@@ -1,0 +1,30 @@
+# Core deps for DRACO. Install in this order to avoid CUDA mismatch issues.
+#
+# Step 1: PyTorch (pick CUDA version matching your driver — CUDA 11.8 / 12.1)
+#   pip install torch==2.2.0 --index-url https://download.pytorch.org/whl/cu118
+# (or for CPU-only laptop debugging:
+#   pip install torch==2.2.0 --index-url https://download.pytorch.org/whl/cpu)
+#
+# Step 2: pip install -r requirements.txt
+#
+# Step 3 (only if you need cartpole_stab / quadrotor_stab):
+#   git clone https://github.com/utiasDSL/safe-control-gym.git
+#   cd safe-control-gym && pip install -e .
+#   pip install pybullet munch dict-deep casadi
+#
+# torch is intentionally omitted from this file because it's CUDA-version-
+# sensitive; install it manually first.
+numpy>=1.24,<2.0
+scipy>=1.11
+gymnasium>=0.29
+matplotlib>=3.7
+pyyaml>=6.0
+
+# Optional but recommended:
+tensorboard>=2.14   # for tensorboard logging
+tqdm>=4.66          # progress bars
+
+# For SCG envs (uncomment if you want; they are heavy):
+# pybullet>=3.2.5
+# munch>=4.0.0
+# casadi>=3.6.4

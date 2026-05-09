@@ -1,0 +1,38 @@
+# DRACO config for quadrotor_stab. Aligned with FuzRL paper Table 2 hp.
+# 12-d obs, 2-d act (planar quadrotor, quad_type=2 in safe-control-gym).
+
+task: quadrotor_stab
+total_steps: 1_500_000
+n_envs: 8
+steps_per_epoch: 2048
+
+# Cost / safety  -- MATCHES FuzRL paper Table 2 (cost_limit = 10)
+cost_limit: 10.0
+
+# Discounts
+gamma: 0.99
+lam: 0.97
+
+# Optimizer  -- MATCHES FuzRL Table 2: actor 2e-4, critic 1e-3, fuzzy 3e-4
+pi_lr: 2.0e-4
+v_lr: 1.0e-3
+vc_lr: 1.0e-3
+gpd_lr: 1.0e-3
+choquet_lr: 3.0e-4
+penalty_lr: 5.0e-2
+
+# PPO  -- target_kl=0.15 MATCHES FuzRL Table 2 (was 0.015 — too tight)
+clip_ratio: 0.2
+train_pi_iters: 80          # FuzRL "optimization step" 80
+train_v_iters: 80
+target_kl: 0.15             # FuzRL value
+hidden_sizes: [256, 128]    # FuzRL Table 2 (was [128, 128] — undersized)
+
+# IQN / risk-aware (DRACO-specific)
+n_tau_train: 32
+n_tau_eval: 64
+eta: 0.7
+
+# K=4 stratified (not FuzRL's K=15). See cartpole config for justification.
+n_shells: 4
+shell_sigmas: [0.01, 0.05, 0.10, 0.20]

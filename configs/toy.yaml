@@ -1,0 +1,29 @@
+# DRACO config for the toy synthetic env (no external deps).
+# Use this for development / smoke testing without safe-control-gym installed.
+
+task: toy
+total_steps: 100_000
+n_envs: 8
+steps_per_epoch: 1024
+
+cost_limit: 10.0
+
+gamma: 0.99
+lam: 0.97
+
+pi_lr: 3.0e-4
+v_lr: 1.0e-3
+vc_lr: 1.0e-3
+gpd_lr: 1.0e-3
+penalty_lr: 5.0e-2
+
+train_pi_iters: 40
+train_v_iters: 40
+target_kl: 0.02
+hidden_sizes: [32, 32]
+
+n_tau_train: 32
+n_tau_eval: 64
+eta: 0.7
+n_shells: 4
+shell_sigmas: [0.01, 0.05, 0.10, 0.20]
