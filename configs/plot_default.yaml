@@ -1,0 +1,20 @@
+# scripts_v2/plot_results.py default config.
+
+# 'learning_curves' (training metrics vs steps) or 'eval_sweep' (ret/cost vs eps)
+mode: learning_curves
+
+runs_dir: ./runs
+tasks: null              # null = auto-discover
+methods: null            # null = all 5 in METHOD_ORDER
+
+# Learning-curves mode
+metrics: [EpRet/mean, EpCost/mean, Lambda/mean]
+x_key: TotalEnvSteps/mean
+smooth: 5
+max_points: 200
+
+# Eval-sweep mode
+eval_glob: "*.eval_v2.json"
+channels: [clean, obs, act, dyn]
+
+out: draco_plot.png

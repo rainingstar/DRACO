@@ -214,7 +214,7 @@ class DRACOAlgorithm:
         # === Optimizers ===
         self.pi_opt = torch.optim.Adam(self.ac.pi.parameters(), lr=pi_lr)
         self.v_opt = torch.optim.Adam(self.ac.v.parameters(), lr=v_lr)
-        self.vc_opt = torch.optim.Adam(self.cost_critic.parameters(), lr=vc_lr)
+        self.vc_opt = torch.optim.Adam(self.cost_critic.parameters(), lr=vc_lr, weight_decay=1e-4)  # IQN-FIX: prevent param drift
         self.gpd_opt = torch.optim.Adam(self.gpd.parameters(), lr=gpd_lr) if self.gpd is not None else None
         self.choquet_opt = torch.optim.Adam(self.choquet.parameters(), lr=choquet_lr) if self.choquet is not None else None
 
@@ -490,20 +490,31 @@ class DRACOAlgorithm:
                           MeanEpCost=ep_cost_mean)
 
     def _update_iqn_cost_critic(self, obs: torch.Tensor, ctg: torch.Tensor):
-        """Quantile Huber loss with MC cost-to-go as target."""
+        """Quantile Huber loss with MC cost-to-go as target.
+
+        IQN-FIX (2026-05-10): added 4 stability measures to prevent late-stage divergence
+        (LossVc -> 1e8 mid-training, observed in seed 1 of warmup-DRACO experiment):
+          1. clamp(max=2000) on pred_z   -- bound runaway critic outputs
+          2. skip-on-large-loss          -- intercept drift early (loss > 1000)
+          3. tighter grad clip 0.5 -> 0.25
+          4. weight_decay=1e-4 on vc_opt (added at construction)
+        """
         B = obs.shape[0]
+        n_skip = 0
         for _ in range(self.train_v_iters):
             tau = torch.rand(B, self.n_tau_train, device=obs.device)
-            pred_z = self.cost_critic(obs, tau)
-            # Target: replicate MC cost-to-go across n_tau_target samples
-            # (single-sample target; quantile Huber averages over predictions)
+            pred_z = self.cost_critic(obs, tau).clamp(max=2000.0)  # IQN-FIX 1
             target_z = ctg.unsqueeze(-1).expand(B, self.n_tau_target).contiguous()
             loss_vc = quantile_huber_loss(pred_z, tau, target_z)
+            if not torch.isfinite(loss_vc) or loss_vc.item() > 1e3:  # IQN-FIX 2
+                n_skip += 1
+                continue
             self.vc_opt.zero_grad()
             loss_vc.backward()
-            torch.nn.utils.clip_grad_norm_(self.cost_critic.parameters(), 0.5)
+            torch.nn.utils.clip_grad_norm_(self.cost_critic.parameters(), 0.25)  # IQN-FIX 3
             self.vc_opt.step()
-        self.logger.store(LossVc=loss_vc.item())
+        self.logger.store(LossVc=loss_vc.item() if torch.isfinite(loss_vc) else 0.0,
+                          VcSkipped=n_skip)  # IQN-FIX log
 
     def _update_gpd(self, obs: torch.Tensor):
         """Per-shell GPD MLE on the tail samples of IQN (or scalar V_C if not IQN)."""

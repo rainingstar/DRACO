@@ -1,0 +1,20 @@
+# scripts_v2/evaluate.py default config — FuzRL Table 3 + ret-vs-eps sweep.
+# Override on CLI as needed.
+
+# Eval seed (different from training seeds 0/1/2 to avoid contamination)
+seed: 1000
+
+# Episodes per (channel, eps) cell. FuzRL paper uses 30.
+n_eval_episodes: 30
+
+# Eps sweep — produces ret-vs-eps and cost-vs-eps curves.
+# Includes 0.0 (clean) so each channel's clean point is comparable.
+eps_list: [0.0, 0.05, 0.10, 0.15, 0.20]
+
+# Channels: clean, obs (Gaussian noise on selected obs dims),
+#           act (impulse force), dyn (multiplicative inertial jitter).
+# 'clean' channel ignores eps_list (always 0); we still iterate eps_list
+# so the JSON shape is uniform — values just repeat for clean.
+channels: [clean, obs, act, dyn]
+
+device: auto
